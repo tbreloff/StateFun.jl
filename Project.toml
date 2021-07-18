@@ -4,5 +4,7 @@ authors = ["Tom Breloff <tom@breloff.com>"]
 version = "0.0.1"
 
 [deps]
+ProtoBuf = "3349acd9-ac6a-5e09-bcdb-63829b23a429"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+protoc_jll = "c7845625-083e-5bbe-8504-b32d602b7110"
