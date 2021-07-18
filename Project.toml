@@ -1,0 +1,4 @@
+name = "StateFun"
+uuid = "29c2deaa-0dfb-420f-b834-1d1939f42052"
+authors = ["Tom Breloff <tom@breloff.com>"]
+version = "0.1.0"
