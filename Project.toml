@@ -4,7 +4,7 @@ authors = ["Tom Breloff <tom@breloff.com>"]
 version = "0.0.1"
 
 [deps]
-Genie = "c43c736e-a2d1-11e8-161f-af95117fbd1e"
+Mux = "a975b10e-0019-58db-a62f-e48ff68538c9"
 ProtoBuf = "3349acd9-ac6a-5e09-bcdb-63829b23a429"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SimpleContainerGenerator = "b8d349fb-717b-4aac-a9b1-e1da4219c631"

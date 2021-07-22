@@ -14,7 +14,8 @@ RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.precompile()'
 
 # add the package and precompile it
 COPY src src
-COPY examples/greeter/greeter.jl examples/greeter/greeter.jl
+COPY scripts/run_server.jl .
+# COPY examples/greeter/greeter.jl examples/greeter/greeter.jl
 # COPY scripts/setup_docker_env.jl setup_docker_env.jl
 # RUN julia setup_docker_env.jl
 # RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.precompile()'
@@ -24,4 +25,4 @@ RUN mkdir -p /root/.julia/config
 RUN echo 'using Pkg; Pkg.activate("."); using Revise' > /root/.julia/config/startup.jl
 
 # run julia
-ENTRYPOINT ["julia"]
+ENTRYPOINT ["julia", "run_server.jl"]
