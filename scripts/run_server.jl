@@ -1,5 +1,14 @@
 using Mux, StateFun, ProtoBuf
 
+function greet_handler(tofunc::ToFunction)
+    println("greeting! $tofunc")
+    FromFunction()
+end
+
+handler = ReqRepHandler(Dict(
+    "example/GreetRequest" => greet_handler
+))
+
 @app app = (Mux.defaults, # use Mux.prod_defaults later
 
     page("/statefun", req -> begin
@@ -10,12 +19,12 @@ using Mux, StateFun, ProtoBuf
         io = IOBuffer(req[:data])
 
         # deserialize the bytes into a ToFunction proto
-        proto = ToFunction()
-        println(proto)
-        readproto(io, proto)
+        tofunc = ToFunction()
+        println(tofunc)
+        readproto(io, tofunc)
 
-        println("tofunc: $proto")
-        ""
+        println("tofunc: $tofunc")
+        handle(handler, tofunc)
     end),
 
     Mux.notfound()
