@@ -1,8 +1,7 @@
 module StateFun
 
-module Protos
+include("protos.jl")
 
 
-end # Protos
 
 end # module

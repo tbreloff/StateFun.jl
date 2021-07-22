@@ -11,7 +11,6 @@ files = Dict(
     "types" => ["types"]
 )
 
-println(@__DIR__)
 
 for (dir, fs) in files
     println(dir)
