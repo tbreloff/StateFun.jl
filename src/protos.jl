@@ -1,6 +1,8 @@
 
 using ProtoBuf
 
+export serialize, deserialize
+
 # from types
 export BooleanWrapper, DoubleWrapper, FloatWrapper, IntWrapper, LongWrapper, StringWrapper
 
@@ -30,7 +32,33 @@ function Base.show(io::IO, proto::ProtoType)
     flds = m.ordered
     props = [fld.fld for fld in flds if hasproperty(proto, fld.fld)]
     for prop in props
-        println(io, "  $prop: $(getproperty(proto, prop))")
+        prop_str = replace(string(getproperty(proto, prop)), "\n" => "\n  ")
+        println(io, "  $prop: $prop_str")
     end
-    println(io, "}")
+    print(io, "}")
+end
+
+"""
+Produce a serialized byte vector from the proto.
+"""
+function serialize(proto::ProtoType)
+    io = IOBuffer()
+    writeproto(io, proto)
+    take!(io)
+end
+
+to_io(vec::AbstractVector{UInt8}) = IOBuffer(vec)
+to_io(io::IO) = io
+
+to_proto(proto::ProtoType) = proto
+to_proto(::Type{T}) where {T <: ProtoType} = T()
+
+"""
+Deserialize the bytes into the given proto.
+"""
+function deserialize(io_or_bytes, proto_or_type)
+    io = to_io(io_or_bytes)
+    proto = to_proto(proto_or_type)
+    readproto(io, proto)
+    proto
 end
