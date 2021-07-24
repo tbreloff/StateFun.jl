@@ -9,12 +9,12 @@ struct StatefulFunctions
     functions::Dict{String, Function}
 
     # maps the typename of a TypedValue to its type
-    type_map::Dict{String, DataType}
+    type_map::Dict{String, Type}
     # the reverse lookup
-    typename_map::Dict{DataType, String}
+    typename_map::Dict{Type, String}
 
-    function StatefulFunctions(; functions = Dict{String, Function}(), types = Tuple{String, DataType}[])
-        o = new(functions, Dict{String, DataType}(), Dict{DataType, String}())
+    function StatefulFunctions(; functions = Dict{String, Function}(), types = Tuple{String, Type}[])
+        o = new(functions, Dict{String, Type}(), Dict{Type, String}())
 
         register(o, "int_value", IntWrapper)
         register(o, "float_value", FloatWrapper)
@@ -31,14 +31,14 @@ struct StatefulFunctions
     end
 end
 
-function register(statefuns::StatefulFunctions, typename::String, _type::DataType)
-    statefuns.type_map[typename] = _type
-    statefuns.typename_map[_type] = typename
+function register(statefuns::StatefulFunctions, typename::String, ::Type{T}) where T
+    statefuns.type_map[typename] = T
+    statefuns.typename_map[T] = typename
 end
 
 get_function(statefuns::StatefulFunctions, typename::String) = statefuns.functions[typename]
 get_type(statefuns::StatefulFunctions, name::String) = statefuns.type_map[name]
-get_typename(statefuns::StatefulFunctions, _type::DataType) = statefuns.typename_map[_type]
+get_typename(statefuns::StatefulFunctions, _type::Type) = statefuns.typename_map[_type]
 
 
 # """
@@ -47,7 +47,7 @@ get_typename(statefuns::StatefulFunctions, _type::DataType) = statefuns.typename
 # """
 # struct TypeInfo
 #     typename::String
-#     _type::DataType
+#     _type::Type
 #     serializer::Function # serializes the type to bytes
 #     deserializer::Function # serializes the type to bytes
 # end
@@ -85,11 +85,7 @@ function handle(statefuns::StatefulFunctions, tofunc::ToFunction)
         println("caller_address: $caller_address")
 
         # extract and deserialize the message
-        msg_typename = invocation.argument.typename
-        msg_type = get_type(statefuns, msg_typename)
-        println("msg_type: $msg_type")
-        msg = deserialize(invocation.argument.value, msg_type)
-        println("msg: $msg")
+        msg = get_message(statefuns, invocation.argument)
 
         # call the function
         # note: the FromFunction is being built inside the function call.
@@ -98,6 +94,15 @@ function handle(statefuns::StatefulFunctions, tofunc::ToFunction)
 
     # return the FromFunction that has been built up through context calls.
     context.fromfunc
+end
+
+function get_message(statefuns::StatefulFunctions, argument::TypedValue)
+    msg_typename = argument.typename
+    msg_type = get_type(statefuns, msg_typename)
+    println("msg_type: $msg_type")
+    msg = deserialize(argument.value, msg_type)
+    println("msg: $msg")
+    msg
 end
 
 struct ValueSpec

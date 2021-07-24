@@ -47,18 +47,25 @@ function serialize(proto::ProtoType)
     take!(io)
 end
 
-to_io(vec::AbstractVector{UInt8}) = IOBuffer(vec)
-to_io(io::IO) = io
+# to_io(vec::AbstractVector{UInt8}) = IOBuffer(vec)
+# to_io(io::IO) = io
 
-to_proto(proto::ProtoType) = proto
-to_proto(::Type{T}) where {T <: ProtoType} = T()
+# to_proto(proto::ProtoType) = proto
+# to_proto(::Type{T}) where {T <: ProtoType} = T()
 
-"""
-Deserialize the bytes into the given proto.
-"""
-function deserialize(io_or_bytes, proto_or_type)
-    io = to_io(io_or_bytes)
-    proto = to_proto(proto_or_type)
-    readproto(io, proto)
-    proto
+# """
+# Deserialize the bytes into the given proto.
+# """
+# function _deserialize(io_or_bytes, proto_or_type)
+#     io = to_io(io_or_bytes)
+#     proto = to_proto(proto_or_type)
+#     readproto(io, proto)
+#     proto
+# end
+
+function deserialize(bytes::AbstractVector{UInt8}, ::Type{T}) where {T}
+    io = IOBuffer(bytes)
+    deserialize(io, T)
 end
+
+deserialize(io::IO, ::Type{T}) where {T<:ProtoType} = readproto(io, T())
