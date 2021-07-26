@@ -47,3 +47,14 @@ end
         @assert mt == mt2
     end
 end
+
+@testset "storage" begin
+    @testset "store" begin
+        statefuns = StatefulFunctions(types=[("int", Int64)])
+        tofunc = ToFunction()
+        context = Context(statefuns, tofunc)
+        store!(context, "xxx", 5)
+
+        @test store(context, "xxx") == 5
+    end
+end

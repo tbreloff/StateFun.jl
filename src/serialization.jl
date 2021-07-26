@@ -15,6 +15,7 @@ function deserialize end
 
 
 """
+    serialize(any_value)
 backup uses julia's serialization module
 """
 function serialize(value)
@@ -24,12 +25,17 @@ function serialize(value)
 end
 
 """
+    deserialize(::IO, ::Type)
 backup uses julia's serialization module
 """
 function deserialize(io::IO, ::Type)
     Serialization.deserialize(io)
 end
 
+"""
+    deserialize(::AbstractVector{UInt8}, ::Type)
+Deserialize the byte array... passes to IO version.
+"""
 function deserialize(bytes::AbstractVector{UInt8}, ::Type{T}) where T
     io = IOBuffer(bytes)
     deserialize(io, T)
@@ -37,10 +43,18 @@ end
 
 # PROTOS
 
+"""
+    serialize(::ProtoType)
+All protobuf objects use this function unless overridden.
+"""
 function serialize(proto::ProtoType)
     io = IOBuffer()
     writeproto(io, proto)
     take!(io)
 end
 
+"""
+    deserialize(::IO, ::Type{ProtoType})
+All protobuf objects use this function unless overridden.
+"""
 deserialize(io::IO, ::Type{T}) where {T<:ProtoType} = readproto(io, T())

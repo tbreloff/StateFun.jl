@@ -1,7 +1,7 @@
 
 import Dates
 
-export StatefulFunctions, Context
+export StatefulFunctions, Context, store, store!
 
 """
 Maintains all registered types and functions.
@@ -53,18 +53,6 @@ function get_typename(statefuns::StatefulFunctions, _type::Type)
     end
 end
 
-
-# """
-# Holds everything we need in order to use a type either in stateful 
-# functions storage or message.
-# """
-# struct TypeInfo
-#     typename::String
-#     _type::Type
-#     serializer::Function # serializes the type to bytes
-#     deserializer::Function # serializes the type to bytes
-# end
-
 """
 The typename of an address in StateFun is the string representing the function that the
 message is being passed to.
@@ -72,6 +60,9 @@ message is being passed to.
 typename(address::Address) = "$(address.namespace)/$(address._type)"
 
 
+"""
+This is the main handler which maps ToFunction --> FromFunction
+"""
 function handle(statefuns::StatefulFunctions, tofunc::ToFunction)
     batch = tofunc.invocation
 
@@ -83,7 +74,7 @@ function handle(statefuns::StatefulFunctions, tofunc::ToFunction)
     println("func: $func")
 
     # init context
-    context = Context()
+    context = Context(statefuns, tofunc)
     println("context: $context")
     for state in batch.state
         println("state: $state")
@@ -137,21 +128,38 @@ end
 Holds both the initial persisted state and any updates.
 """
 struct Storage{T}
-    # value_spec::ValueSpec
-    state_name::String
     initial_state_value::Union{Nothing, T}
-    mutated_value::Union{Nothing, T}
-    should_delete::Bool
 
-    # Storage() = new()
+    # starts as nothing.
+    # missing means "delete"
+    # any T value means "update"
+    mutated_value::Union{Nothing, Missing, T}
 end
 
-function store!(storage::Storage, mutation::FromFunction_PersistedValueMutation)
-    storage.mutation = mutation
+existing_state(value::T, ::Type{SUP}) where {SUP, T<:SUP} = Storage{SUP}(value, nothing)
+existing_state(value::T) where T = existing_state(value, typeof(T))
+
+new_state(value::T, ::Type{SUP}) where {SUP, T<:SUP} = Storage{SUP}(nothing, value)
+new_state(value::T) where T = new_state(value, typeof(T))
+
+"""
+get the currently-stored value.
+"""
+function store(storage::Storage)
+    isnothing(storage.mutated_value) ? storage.initial_state_value : storage.mutated_value
 end
-function Base.delete!(storage::Storage)
-    storage.should_delete = true
-end
+
+"""
+    store!(::Storage{T}, value::T)
+update the currently-stored value
+"""
+store!(storage::Storage{T}, value::T) where T = storage.mutated_value = value
+
+"""
+    store!(::Storage)
+delete the stored value
+"""
+store!(storage::Storage) = storage.mutated_value = missing
 
 """
 Manages all inputs, updates, and messages to sent in a function.
@@ -160,6 +168,7 @@ the stateful functions runtime.
 """
 mutable struct Context
     statefuns::StatefulFunctions
+    tofunc::ToFunction
     storage::Dict{String, Storage}
     caller::Union{Address, Nothing}
     # used in good states
@@ -167,8 +176,9 @@ mutable struct Context
     # used in bad/error states
     incomplete_invocation_context::FromFunction_IncompleteInvocationContext
 
-    Context(statefuns::StatefulFunctions) = new(
+    Context(statefuns::StatefulFunctions, tofunc::ToFunction) = new(
         statefuns, 
+        tofunc,
         Dict{String, Storage}(), 
         nothing, 
         FromFunction_InvocationResponse(),
@@ -176,7 +186,52 @@ mutable struct Context
     )
 end
 
-# function store!(context::Context, name::String, )
+function init_storage(statefuns::StatefulFunctions, tofunc::ToFunction)
+    d = Dict{String, Storage}()
+    for state in tofunc.invocation.state
+        # state is PersistedValue
+        # state_name
+        # state_value::TypedValue
+        T = get_type(statefuns, state.state_value.typename)
+        value = deserialize(typed_value.value, T)
+        storage = existing_state(value, T)
+        d[state.state_name] = storage
+    end
+    d
+end
+
+"""
+get the currently-stored value.
+"""
+function store(context::Context, state_name::String)
+    if haskey(context.storage, state_name)
+        store(context.storage[state_name])
+    else
+        nothing
+    end
+end
+
+"""
+    store!(::Storage{T}, value::T)
+update the currently-stored value
+"""
+function store!(context::Context, state_name::String, value::T) where T
+    if haskey(context.storage, state_name)
+        store!(context.storage[state_name], value)
+    else
+        context.storage[state_name] = new_state(value)
+    end
+end
+
+"""
+    store!(::Storage)
+delete the stored value
+"""
+function store!(context::Context, state_name::String)
+    if haskey(context.storage, state_name)
+        store!(context.storage[state_name])
+    end
+end
 
 """
 create a TypedValue by using the registered typename and defined serialization
@@ -186,6 +241,11 @@ function make_argument(context::Context, value)
     typename = get_typename(context.statefuns, T)
     bytes = serialize(value)
     TypedValue(typename=typename, _has_value=true, value=bytes)
+end
+
+function make_value(statefuns::StatefulFunctions, typed_value::TypedValue)
+    T = get_type(statefuns, typed_value.typename)
+    deserialize(typed_value.value, T)
 end
 
 """

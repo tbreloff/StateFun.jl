@@ -23,6 +23,9 @@ using .Protos.io_pb.statefun_pb.sdk_pb.egress_pb
 using .Protos.io_pb.statefun_pb.sdk_pb.reqreply_pb
 using .Protos.io_pb.statefun_pb.sdk_pb.types_pb
 
+# --- TODO ---
+# These methods should maybe be added to ProtoBuf.jl...
+
 # nicer implementation of show
 function Base.show(io::IO, proto::ProtoType)
     println(io, "$(typeof(proto)) {")
@@ -35,23 +38,6 @@ function Base.show(io::IO, proto::ProtoType)
     end
     print(io, "}")
 end
-
-
-# to_io(vec::AbstractVector{UInt8}) = IOBuffer(vec)
-# to_io(io::IO) = io
-
-# to_proto(proto::ProtoType) = proto
-# to_proto(::Type{T}) where {T <: ProtoType} = T()
-
-# """
-# Deserialize the bytes into the given proto.
-# """
-# function _deserialize(io_or_bytes, proto_or_type)
-#     io = to_io(io_or_bytes)
-#     proto = to_proto(proto_or_type)
-#     readproto(io, proto)
-#     proto
-# end
 
 
 """
