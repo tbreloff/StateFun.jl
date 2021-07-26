@@ -5,10 +5,12 @@ version = "0.0.1"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HttpCommon = "77172c1b-203f-54ac-aa54-3f1198fe9f90"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Mux = "a975b10e-0019-58db-a62f-e48ff68538c9"
 ProtoBuf = "3349acd9-ac6a-5e09-bcdb-63829b23a429"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 SimpleContainerGenerator = "b8d349fb-717b-4aac-a9b1-e1da4219c631"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

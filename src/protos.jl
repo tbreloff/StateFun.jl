@@ -1,8 +1,6 @@
 
 using ProtoBuf
 
-export serialize, deserialize
-
 # from types
 export BooleanWrapper, DoubleWrapper, FloatWrapper, IntWrapper, LongWrapper, StringWrapper
 
@@ -38,14 +36,6 @@ function Base.show(io::IO, proto::ProtoType)
     print(io, "}")
 end
 
-"""
-Produce a serialized byte vector from the proto.
-"""
-function serialize(proto::ProtoType)
-    io = IOBuffer()
-    writeproto(io, proto)
-    take!(io)
-end
 
 # to_io(vec::AbstractVector{UInt8}) = IOBuffer(vec)
 # to_io(io::IO) = io
@@ -63,9 +53,22 @@ end
 #     proto
 # end
 
-function deserialize(bytes::AbstractVector{UInt8}, ::Type{T}) where {T}
-    io = IOBuffer(bytes)
-    deserialize(io, T)
-end
 
-deserialize(io::IO, ::Type{T}) where {T<:ProtoType} = readproto(io, T())
+"""
+Assuming the given field of the proto expects a vector, add a value to it.
+Note: creates a new vector if the field is uninitialized.]
+"""
+function Base.push!(proto::ProtoType, field::Symbol, value)
+    vec = if !hasproperty(proto, field)
+        m = meta(typeof(proto))
+        attr = m.symdict[field]
+        @assert attr.jtyp <: Vector
+        vec = attr.jtyp() # init a vector of the proper type
+        setproperty!(proto, field, vec)
+        vec
+    else
+        getproperty(proto, field)
+    end
+    println(typeof(vec))
+    push!(vec, value)
+end
