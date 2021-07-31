@@ -12,16 +12,13 @@ mutable struct Context
     caller::Union{Address, Nothing}
     # used in good states
     invocation_response::FromFunction_InvocationResponse
-    # used in bad/error states
-    incomplete_invocation_context::FromFunction_IncompleteInvocationContext
 
     Context(statefuns::StatefulFunctions, tofunc::ToFunction) = new(
         statefuns, 
         tofunc,
         Dict{String, Storage}(), 
         nothing, 
-        FromFunction_InvocationResponse(),
-        FromFunction_IncompleteInvocationContext()
+        FromFunction_InvocationResponse()
     )
 end
 
@@ -29,14 +26,43 @@ function init_storage(statefuns::StatefulFunctions, tofunc::ToFunction)
     d = Dict{String, Storage}()
     for state in tofunc.invocation.state
         # state is PersistedValue
-        # state_name
-        # state_value::TypedValue
         T = get_type(statefuns, state.state_value.typename)
         value = deserialize(typed_value.value, T)
         storage = existing_state(value, T)
         d[state.state_name] = storage
     end
     d
+end
+
+"""
+compare what's been stored in the storage dict with the original
+tofunc and add state mutations to the invocation_response
+"""
+function add_state_mutations!(context::Context)
+    @show context.storage
+    @show context.invocation_response
+    for (state_name, storage) in context.storage
+        if ismissing(storage.mutated_value)
+            if !isnothing(storage.initial_state_value)
+                # need to delete this state
+                state_chg = FromFunction_PersistedValueMutation(
+                    mutation_type=FromFunction_PersistedValueMutation_MutationType.DELETE,
+                    state_name=state_name
+                )
+                push!(context.invocation_response, :state_mutations, state_chg)
+            end
+        elseif !isnothing(storage.mutated_value)
+            if storage.mutated_value != storage.initial_state_value
+                # updated value
+                state_chg = FromFunction_PersistedValueMutation(
+                    mutation_type=FromFunction_PersistedValueMutation_MutationType.MODIFY,
+                    state_name=state_name,
+                    state_value=make_argument(context.statefuns, storage.mutated_value)
+                )
+                push!(context.invocation_response, :state_mutations, state_chg)
+            end
+        end
+    end
 end
 
 

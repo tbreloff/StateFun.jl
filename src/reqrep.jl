@@ -33,7 +33,8 @@ end
 successful case... build a FromFunction given the Context
 """
 function make_fromfunction(context::Context)
-    throw("todo: build the fromfunction from the context")
+    add_state_mutations!(context)
+    FromFunction(invocation_result=context.invocation_response)
 end
 
 """
